@@ -1,40 +1,54 @@
 import { useEffect, useState } from "react";
-import './Student.css';
+import "./Student.css";
 
 function Student() {
-  // Point directly to your live Render backend when deployed, fallback to local for development
-  const API = window.location.hostname === "localhost" 
-    ? "http://localhost:8080/api/students" 
-    : "https://studentmanagementsystem-bod4.onrender.com/api/students"; 
+
+  const API =
+    window.location.hostname === "localhost"
+      ? "http://localhost:8080/api/students"
+      : "https://studentmanagementsystem-bod4.onrender.com/api/students";
 
   const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [searchId, setSearchId] = useState("");
 
-  // Clean initialization values
   const [student, setStudent] = useState({
     sid: "",
     name: "",
     age: "",
-    marks: "" 
+    marks: "",
   });
 
   useEffect(() => {
     fetchStudents();
   }, []);
 
+  // ==========================
   // GET ALL STUDENTS
+  // ==========================
   const fetchStudents = async () => {
+    setLoading(true);
+
     try {
       const res = await fetch(API);
-      if (!res.ok) throw new Error("Failed to fetch student database array.");
+
+      if (!res.ok) {
+        throw new Error("Unable to fetch students.");
+      }
+
       const data = await res.json();
       setStudents(data);
     } catch (error) {
-      console.error("Fetch error:", error);
+      console.error(error);
+      alert("Unable to connect to server.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // INPUT CHANGE HANDLER
+  // ==========================
+  // HANDLE INPUT
+  // ==========================
   const handleChange = (e) => {
     setStudent({
       ...student,
@@ -42,127 +56,197 @@ function Student() {
     });
   };
 
-  // ADD STUDENT (POST)
+  // ==========================
+  // ADD STUDENT
+  // ==========================
   const addStudent = async () => {
+
     if (!student.name || !student.age || !student.marks) {
-      alert("Please fill in all fields before adding a student.");
+      alert("Please fill all fields.");
       return;
     }
 
     try {
+
       const res = await fetch(API, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
+
         body: JSON.stringify({
           name: student.name,
-          age: parseInt(student.age, 10),
-          marks: parseFloat(student.marks)
+          age: Number(student.age),
+          marks: Number(student.marks),
         }),
       });
 
-      if (res.ok) {
-        clearForm();
-        fetchStudents();
+      if (!res.ok) {
+        throw new Error("Failed to add student.");
       }
+
+      alert("Student added successfully.");
+
+      clearForm();
+      fetchStudents();
+
     } catch (error) {
       console.error(error);
+      alert("Unable to add student.");
     }
   };
 
-  // GET BY ID (SEARCH)
+  // ==========================
+  // SEARCH BY ID
+  // ==========================
   const getStudentById = async () => {
+
     if (!searchId) {
-      alert("Please enter a Student ID to query.");
+      alert("Enter Student ID.");
       return;
     }
 
     try {
+
       const res = await fetch(`${API}/${searchId}`);
 
       if (res.status === 404) {
-        alert("Student record does not exist.");
+        alert("Student not found.");
         clearForm();
         return;
+      }
+
+      if (!res.ok) {
+        throw new Error("Search failed.");
       }
 
       const data = await res.json();
-      if (!data) {
-        alert("Student not found");
-        clearForm();
-        return;
-      }
 
       setStudent(data);
+
     } catch (error) {
       console.error(error);
-      alert("Error processing search query framework loop.");
+      alert("Unable to search student.");
     }
   };
 
-  // UPDATE (PUT)
+  // ==========================
+  // UPDATE
+  // ==========================
   const updateStudent = async () => {
+
     if (!student.sid) {
-      alert("Please select a student from the table or search by ID before updating.");
+      alert("Select a student first.");
       return;
     }
 
+    if (!window.confirm("Update this student?")) return;
+
     try {
-      await fetch(`${API}/${student.sid}`, {
+
+      const res = await fetch(`${API}/${student.sid}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
+
         body: JSON.stringify(student),
       });
 
+      if (!res.ok) {
+        throw new Error("Update failed.");
+      }
+
+      alert("Student updated successfully.");
+
       clearForm();
       fetchStudents();
+
     } catch (error) {
       console.error(error);
+      alert("Unable to update student.");
     }
   };
 
-  // PARTIAL UPDATE (PATCH)
+  // ==========================
+  // PATCH
+  // ==========================
   const patchStudent = async () => {
+
     if (!student.sid) {
-      alert("Please select a student from the table or search by ID before patching.");
+      alert("Select a student first.");
       return;
     }
 
     try {
-      await fetch(`${API}/${student.sid}`, {
+
+      const res = await fetch(`${API}/${student.sid}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
+
         body: JSON.stringify(student),
       });
 
+      if (!res.ok) {
+        throw new Error("Patch failed.");
+      }
+
+      alert("Student updated successfully.");
+
       clearForm();
       fetchStudents();
+
     } catch (error) {
       console.error(error);
+      alert("Unable to patch student.");
     }
   };
 
-  // DELETE STUDENT
+  // ==========================
+  // DELETE
+  // ==========================
   const deleteStudent = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this student profile?")) return;
+
+    if (!window.confirm("Delete this student?")) return;
 
     try {
-      await fetch(`${API}/${id}`, {
+
+      const res = await fetch(`${API}/${id}`, {
         method: "DELETE",
       });
+
+      if (!res.ok) {
+        throw new Error("Delete failed.");
+      }
+
+      alert("Student deleted successfully.");
+
       fetchStudents();
-      if (student.sid === id) clearForm(); 
+
+      if (student.sid === id) {
+        clearForm();
+      }
+
     } catch (error) {
       console.error(error);
+      alert("Unable to delete student.");
     }
   };
 
-  // LOAD DATA INTO FORM STAGING AREA
+  // ==========================
+  // LOAD DATA TO FORM
+  // ==========================
   const editStudent = (s) => {
     setStudent(s);
   };
 
-  // CLEAR DATA WORKSPACE FORM
+  // ==========================
+  // CLEAR FORM
+  // ==========================
   const clearForm = () => {
+
     setStudent({
       sid: "",
       name: "",
@@ -170,107 +254,190 @@ function Student() {
       marks: "",
     });
   };
+    return (
+    <div className="container">
+      <h2>🎓 Student CRUD Application</h2>
 
-  return (
-    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-      <h2>Student CRUD Application</h2>
+      {loading && (
+        <h3 style={{ color: "green" }}>Loading students...</h3>
+      )}
 
-      <div style={{ marginBottom: "15px" }}>
+      {/* ================= FORM ================= */}
+
+      <div className="form-container">
+
         <input
           type="text"
           name="name"
-          placeholder="Name"
+          placeholder="Enter Name"
           value={student.name}
           onChange={handleChange}
-          style={{ marginRight: "10px" }}
         />
 
         <input
           type="number"
           name="age"
-          placeholder="Age"
+          placeholder="Enter Age"
           value={student.age}
           onChange={handleChange}
-          style={{ marginRight: "10px" }}
         />
 
         <input
           type="number"
-          name="marks" 
-          placeholder="Marks"
+          name="marks"
+          placeholder="Enter Marks"
           value={student.marks}
           onChange={handleChange}
-          style={{ marginRight: "10px" }}
         />
+
       </div>
 
-      <div style={{ marginBottom: "20px" }}>
-        <button onClick={addStudent} style={{ marginRight: "5px" }}>Add</button>
-        <button onClick={updateStudent} style={{ marginRight: "5px" }}>Update (PUT)</button>
-        <button onClick={patchStudent} style={{ marginRight: "5px" }}>Patch</button>
-        <button onClick={clearForm}>Clear Form</button>
+      <div className="button-group">
+
+        <button onClick={addStudent}>
+          ➕ Add
+        </button>
+
+        <button onClick={updateStudent}>
+          ✏️ Update
+        </button>
+
+        <button onClick={patchStudent}>
+          📝 Patch
+        </button>
+
+        <button onClick={clearForm}>
+          🔄 Clear
+        </button>
+
       </div>
 
       <hr />
 
-      <div style={{ margin: "20px 0" }}>
+      {/* ================= SEARCH ================= */}
+
+      <div className="search-container">
+
         <input
           type="number"
-          placeholder="Search By ID"
+          placeholder="Search Student By ID"
           value={searchId}
           onChange={(e) => setSearchId(e.target.value)}
-          style={{ marginRight: "10px" }}
         />
-        <button onClick={getStudentById}>Search Record</button>
+
+        <button onClick={getStudentById}>
+          🔍 Search
+        </button>
+
       </div>
 
       <hr />
 
-      <table border="1" cellPadding="10" style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+      {/* ================= TABLE ================= */}
+
+      <table>
+
         <thead>
-          <tr style={{ backgroundColor: "#f2f2f2" }}>
+
+          <tr>
             <th>ID</th>
             <th>Name</th>
             <th>Age</th>
             <th>Marks</th>
-            <th>Edit Action</th>
-            <th>Delete Action</th>
+            <th>Edit</th>
+            <th>Delete</th>
           </tr>
+
         </thead>
 
         <tbody>
+
           {students.length === 0 ? (
+
             <tr>
-              <td colSpan="6" style={{ textAlign: "center" }}>No structural student data found within target schema context.</td>
+              <td
+                colSpan="6"
+                style={{ textAlign: "center" }}
+              >
+                No students found.
+              </td>
             </tr>
+
           ) : (
+
             students.map((s) => (
+
               <tr key={s.sid}>
+
                 <td>{s.sid}</td>
                 <td>{s.name}</td>
                 <td>{s.age}</td>
                 <td>{s.marks}</td>
+
                 <td>
-                  <button onClick={() => editStudent(s)}>✍️ Load to Edit</button>
+
+                  <button
+                    onClick={() => editStudent(s)}
+                  >
+                    ✏️ Edit
+                  </button>
+
                 </td>
+
                 <td>
-                  <button onClick={() => deleteStudent(s.sid)} style={{ color: "red" }}>🗑️ Drop</button>
+
+                  <button
+                    onClick={() => deleteStudent(s.sid)}
+                    style={{
+                      background: "red",
+                      color: "white",
+                    }}
+                  >
+                    🗑 Delete
+                  </button>
+
                 </td>
+
               </tr>
+
             ))
+
           )}
+
         </tbody>
+
       </table>
 
       <hr />
 
-      <h3>Active Data Pointer In-Focus:</h3>
-      <div style={{ background: "#f9f9f9", padding: "10px", borderRadius: "4px", width: "fit-content" }}>
-        <p><strong>ID:</strong> {student.sid || "None (Staged Record Pending Persist)"}</p>
-        <p><strong>Name:</strong> {student.name || "N/A"}</p>
-        <p><strong>Age:</strong> {student.age || "N/A"}</p>
-        <p><strong>Marks:</strong> {student.marks || "N/A"}</p>
+      {/* ================= ACTIVE STUDENT ================= */}
+
+      <div className="active-student">
+
+        <h3>Selected Student</h3>
+
+        <p>
+          <strong>ID:</strong>{" "}
+          {student.sid || "None"}
+        </p>
+
+        <p>
+          <strong>Name:</strong>{" "}
+          {student.name || "-"}
+        </p>
+
+        <p>
+          <strong>Age:</strong>{" "}
+          {student.age || "-"}
+        </p>
+
+        <p>
+          <strong>Marks:</strong>{" "}
+          {student.marks || "-"}
+        </p>
+
       </div>
+
     </div>
   );
 }
