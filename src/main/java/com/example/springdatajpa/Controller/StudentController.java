@@ -11,7 +11,7 @@ import com.example.springdatajpa.service.StudentService;
 
 @RestController
 @RequestMapping("/api/students")
-@CrossOrigin(origins = "http://localhost:5173") // Maps to your Vite-React client application port
+@CrossOrigin(origins = "http://localhost:5173, \"https://student-management-system-n1vz.vercel.app\"") // Maps to your Vite-React client application port
 public class StudentController {
 
     @Autowired
